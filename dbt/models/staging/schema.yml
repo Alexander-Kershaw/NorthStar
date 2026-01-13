@@ -126,3 +126,43 @@ models:
           - accepted_values:
               arguments:
                 values: ["up", "down"]
+
+
+# Documentation for stg_incidents model
+  - name: stg_incidents
+    description: "Staged incident outage windows with normalized severity and cause."
+    columns:
+      - name: incident_id
+        tests:
+          - not_null
+          - unique
+
+      - name: asset_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_assets')
+                field: asset_id
+
+      - name: start_ts
+        tests:
+          - not_null
+
+      - name: end_ts
+        tests:
+          - not_null
+
+      - name: severity
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["low", "medium", "high"]
+
+      - name: cause
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["maintenance", "network", "hardware", "weather"]
