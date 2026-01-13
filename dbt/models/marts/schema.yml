@@ -1,6 +1,10 @@
+# Gold mart schema
+
 version: 2
 
 models:
+
+# asset uptime fact and testing
   - name: fct_asset_uptime_hourly
     description: "Gold fact table at asset-hour grain with numeric uptime indicator."
     columns:
@@ -22,3 +26,25 @@ models:
           - accepted_values:
               arguments:
                 values: [0, 1]
+
+
+# asset dimension and testing
+  - name: dim_asset
+    description: "Gold dimension for operational assets (authoritative attributes for slicing ops metrics)."
+    columns:
+      - name: asset_id
+        tests:
+          - not_null
+          - unique
+
+      - name: asset_type
+        tests:
+          - not_null
+
+      - name: region
+        tests:
+          - not_null
+
+      - name: capacity_kw
+        tests:
+          - not_null
