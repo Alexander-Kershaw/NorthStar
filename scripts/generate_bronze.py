@@ -265,6 +265,96 @@ def make_assets(n_assets: int = 250, seed: int = 31) -> pd.DataFrame:
     return df
 
 
+def make_telemetry(assets: pd.DataFrame, start: str = "2025-01-01", end: str = "2025-03-31", seed: int = 41,) -> pd.DataFrame:
+    """
+    Synthetic telemetry source table. This table will contain time series data for each asset 
+    showing operational status and wind speed measurements. Simulates real-world telemetry data with realistic patterns.
+
+    Structure:
+    - one row per asset per hour in the time range
+
+    Columns:
+    - asset_id (foreign key to assets table)
+    - ts (timestamp) (hourly)
+    - status ("up" / "down") (binary operational status)
+    - wind_speed_ms (float) (measured wind speed in m/s)
+
+    Inject realistic downtime patterns:
+    - rare random failures (simulate brief glitches in data)
+    - occasional multi-hour outages (storm/maintenance events) 
+    """
+    rng = np.random.default_rng(seed)
+
+    # Hourly time index
+    ts_index = pd.date_range(start=start, end=end, freq="H", inclusive="both", tz="UTC")
+    n_t = len(ts_index)
+    n_a = len(assets)
+
+    # Cross join asset_id x timestamps (vectorized with numpy for performance)
+    asset_ids = np.repeat(assets["asset_id"].values, n_t)
+    ts = np.tile(ts_index.values, n_a)
+
+    # Build asset telemetry DataFrame
+    df = pd.DataFrame({"asset_id": asset_ids, "ts": pd.to_datetime(ts)})
+
+    # Wind by region (some rough differences)
+    region_map = assets.set_index("asset_id")["region"].astype(str).str.lower().to_dict()
+    region = pd.Series(df["asset_id"]).map(region_map).fillna("north_sea")
+
+    # Base wind speed by region
+    region_base = {
+        "north_sea": 9.5,
+        "irish_sea": 8.5,
+        "channel": 7.5,
+        "atlantic": 10.5,
+    }
+    # Fill missing regions with average base
+    base = region.map(region_base).fillna(9.0).astype(float).values
+
+    # Daily wind cycle with noise 
+    hour = pd.to_datetime(df["ts"]).dt.hour.values
+    daily = 1.5 * np.sin(2 * np.pi * hour / 24.0)
+    noise = rng.normal(0, 1.2, size=len(df))
+
+    # Final wind speed calculation with clipping at 0
+    wind = np.clip(base + daily + noise, 0, None)
+    df["wind_speed_ms"] = wind.round(2)
+
+    # Status generation
+    # Start with "up" everywhere (normal functioning operation)
+    status = np.array(["up"] * len(df), dtype=object)
+
+    # Define random single-hour failures (very rare)
+    random_fail = rng.random(len(df)) < 0.0015
+    status[random_fail] = "down"
+
+    # Inject a few multi-hour outage windows per asset (for maintenance/storm events)
+    # This creates realistic contiguous downtime periods in conjunction with random failures
+    for asset_id in assets["asset_id"].values:
+        # 0-3 outage windows per asset across the time range
+        n_outages = rng.integers(0, 4)
+        if n_outages == 0:
+            continue
+
+        asset_mask = df["asset_id"].values == asset_id
+        idxs = np.where(asset_mask)[0]
+
+        for _ in range(n_outages):
+            start_idx = rng.choice(idxs)
+            duration = int(rng.integers(2, 15))  # 2 to 14 hours
+            end_idx = min(start_idx + duration, idxs[-1])
+
+            status[start_idx:end_idx] = "down"
+
+    df["status"] = status
+
+    # Incoporate some bronze inconsistencies e.g. missing wind speed values (simulating sensor glitches) 
+    miss_idx = rng.choice(df.index, size=int(0.001 * len(df)), replace=False)
+    df.loc[miss_idx, "wind_speed_ms"] = np.nan
+
+    return df
+
+
 if __name__ == "__main__":
     users = make_users()
     users_path = BRONZE_DIR / "users.parquet"
@@ -285,4 +375,9 @@ if __name__ == "__main__":
     assets_path = BRONZE_DIR / "assets.parquet"
     assets.to_parquet(assets_path, index=False)
     print(f"Wrote {len(assets):,} rows -> {assets_path}")
+
+    telemetry = make_telemetry(assets)
+    telemetry_path = BRONZE_DIR / "telemetry.parquet"
+    telemetry.to_parquet(telemetry_path, index=False)
+    print(f"Wrote {len(telemetry):,} rows -> {telemetry_path}")
 
