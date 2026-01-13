@@ -4,7 +4,7 @@ version: 2
 
 models:
 
-# asset uptime fact and testing
+# asset uptime fact and testing (hourly)
   - name: fct_asset_uptime_hourly
     description: "Gold fact table at asset-hour grain with numeric uptime indicator."
     columns:
@@ -46,5 +46,34 @@ models:
           - not_null
 
       - name: capacity_kw
+        tests:
+          - not_null
+
+  
+# daily asset uptime fact and testing 
+  - name: fct_asset_uptime_daily
+    description: "Daily uptime KPIs at asset-day grain."
+    columns:
+      - name: asset_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_asset')
+                field: asset_id
+
+      - name: date_day
+        tests:
+          - not_null
+
+      - name: uptime_pct
+        tests:
+          - not_null
+
+      - name: downtime_hours
+        tests:
+          - not_null
+
+      - name: total_hours
         tests:
           - not_null
