@@ -355,6 +355,90 @@ def make_telemetry(assets: pd.DataFrame, start: str = "2025-01-01", end: str = "
     return df
 
 
+def make_incidents(telemetry: pd.DataFrame, seed: int = 51) -> pd.DataFrame:
+    """
+    Synthetic incidents source table derived from telemetry downtime windows
+
+    One row per outage window:
+    - incident_id (primary key)
+    - asset_id (foreign key to assets)
+    - start_ts (timestamp)
+    - end_ts (timestamp)
+    - duration_hours (duration in hours)
+    - severity (categorical: low, medium, high)
+    - cause (categorical: maintenance, network, hardware, weather)
+    """
+    rng = np.random.default_rng(seed)
+
+    # Filter telemetry to only "down" status and sort
+    down = telemetry.loc[telemetry["status"] == "down", ["asset_id", "ts"]].copy()
+    down = down.sort_values(["asset_id", "ts"])
+
+    incidents = []
+    inc_id = 1
+
+    # Group by asset_id to identify contiguous down periods
+    for asset_id, g in down.groupby("asset_id", sort=False):
+        ts = pd.to_datetime(g["ts"]).sort_values().reset_index(drop=True)
+
+        if ts.empty:
+            continue
+
+        # Identifying breaks between contiguous hours
+        # A new incident starts when the gap is > 1 hour
+        gaps = ts.diff() > pd.Timedelta(hours=1)
+        incident_group = gaps.cumsum()
+        
+        for _, block in ts.groupby(incident_group):
+            start_ts = block.iloc[0]
+            end_ts = block.iloc[-1] + pd.Timedelta(hours=1)
+            duration_hours = int((end_ts - start_ts) / pd.Timedelta(hours=1))
+
+            # Ignore small 1-hour blips sometimes (simulate transient glitches)
+            if duration_hours == 1 and rng.random() < 0.5:
+                continue
+
+            # Severity classification based on duration
+            if duration_hours <= 2:
+                severity = "low"
+            elif duration_hours <= 6:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            # Cause category (These are also synthetic but plausible)
+            cause = rng.choice(
+                ["maintenance", "network", "hardware", "weather"],
+                p=[0.20, 0.35, 0.30, 0.15],
+            )
+
+            incidents.append(
+                {
+                    "incident_id": f"I{inc_id:08d}",
+                    "asset_id": asset_id,
+                    "start_ts": start_ts,
+                    "end_ts": end_ts,
+                    "duration_hours": duration_hours,
+                    "severity": severity,
+                    "cause": cause,
+                }
+            )
+            inc_id += 1
+
+    df = pd.DataFrame(incidents)
+
+    # Injecting bronze data inconsistencies: occasional casing issues in severity/cause
+    if not df.empty:
+        sev_idx = rng.choice(df.index, size=int(0.02 * len(df)), replace=False)
+        df.loc[sev_idx, "severity"] = df.loc[sev_idx, "severity"].str.upper()
+
+        cause_idx = rng.choice(df.index, size=int(0.02 * len(df)), replace=False)
+        df.loc[cause_idx, "cause"] = df.loc[cause_idx, "cause"].str.upper()
+
+    return df
+
+
+
 if __name__ == "__main__":
     users = make_users()
     users_path = BRONZE_DIR / "users.parquet"
@@ -380,4 +464,10 @@ if __name__ == "__main__":
     telemetry_path = BRONZE_DIR / "telemetry.parquet"
     telemetry.to_parquet(telemetry_path, index=False)
     print(f"Wrote {len(telemetry):,} rows -> {telemetry_path}")
+    
+    incidents = make_incidents(telemetry)
+    incidents_path = BRONZE_DIR / "incidents.parquet"
+    incidents.to_parquet(incidents_path, index=False)
+    print(f"Wrote {len(incidents):,} rows -> {incidents_path}")
+
 
