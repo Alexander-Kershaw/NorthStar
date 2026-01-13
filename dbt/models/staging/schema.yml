@@ -1,6 +1,8 @@
-version: 2
+# Documentation and tests for staging models
 
+version: 2
 models:
+# Documentation for stg_users model
   - name: stg_users
     description: "Staged users with standardized country and signup channel."
     columns:
@@ -19,3 +21,108 @@ models:
                 values: ["organic", "paid_search", "referral", "partner", "direct"]
 
 
+# Documentation for stg_subscriptions model
+  - name: stg_subscriptions
+    description: "Staged subscription periods with standardized plan_id and dates."
+    columns:
+      - name: subscription_id
+        tests:
+          - not_null
+          - unique
+
+      - name: user_id
+        tests:
+          - not_null
+
+      - name: plan_id
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["free", "basic", "pro", "enterprise"]
+
+      - name: start_date
+        tests:
+          - not_null
+
+
+# Documentation for stg_events model
+  - name: stg_events
+    description: "Staged product events with standardized event_type and timestamp."
+    columns:
+      - name: event_id
+        tests:
+          - not_null
+          - unique
+
+      - name: user_id
+        tests:
+          - not_null
+
+      - name: event_ts
+        tests:
+          - not_null
+
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - login
+                  - view_dashboard
+                  - export_report
+                  - create_alert
+                  - billing_view
+
+
+# Documentation for stg_assets model
+  - name: stg_assets
+    description: "Staged operational assets with standardized region/type."
+    columns:
+      - name: asset_id
+        tests:
+          - not_null
+          - unique
+
+      - name: asset_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["turbine", "met_station", "edge_gateway"]
+
+      - name: region
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["north_sea", "irish_sea", "channel", "atlantic"]
+
+      - name: capacity_kw
+        tests:
+          - not_null
+
+
+# Documentation for stg_telemetry model
+  - name: stg_telemetry
+    description: "Staged hourly telemetry with normalized status and timestamp."
+    columns:
+      - name: asset_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_assets')
+                field: asset_id
+
+      - name: ts
+        tests:
+          - not_null
+
+      - name: status
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["up", "down"]
