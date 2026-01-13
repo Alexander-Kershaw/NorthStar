@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: stg_users
+    description: "Staged users with standardized country and signup channel."
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+          - unique
+      - name: created_at
+        tests:
+          - not_null
+      - name: signup_channel
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["organic", "paid_search", "referral", "partner", "direct"]
+
+
