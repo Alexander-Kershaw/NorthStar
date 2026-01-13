@@ -139,6 +139,82 @@ def make_subscriptions(users: pd.DataFrame, seed: int = 11) -> pd.DataFrame:
     return subs
 
 
+def make_events(users: pd.DataFrame, subscriptions: pd.DataFrame, seed: int = 21) -> pd.DataFrame:
+    """
+    Synthetic events source table (Bronze)
+
+    Purpose is to implement typical user engagement metrics:
+    - DAU/WAU/MAU (daily/weekly/monthly active users)
+    - activation rate (number of users performing key actions within 7 days of signup)
+    - retention cohorts (are us ers returning to use the product over time)
+
+    Generated events:
+    - one row per event (events as such: login, view_dashboard, export_report, create_alert, billing_view)
+    """
+    rng = np.random.default_rng(seed)
+
+    # Identifying which users are paying at least once
+    paying_user_ids = set(subscriptions["user_id"].unique())
+
+    # array of possible event types and their probabilities (different for free and paid users)
+    event_types = np.array(
+        ["login", "view_dashboard", "export_report", "create_alert", "billing_view"]
+    )
+    event_probs_free = np.array([0.55, 0.35, 0.04, 0.03, 0.03]) # free users are less likely to do advanced actions
+    event_probs_paid = np.array([0.45, 0.38, 0.08, 0.06, 0.03]) # paid users generally more engaged
+
+    rows = []
+    event_id = 1
+
+    # Generate per-user to make retention patterns more authentic
+    for _, u in users.iterrows():
+        user_id = u["user_id"]
+        created_at = pd.Timestamp(u["created_at"]).normalize()
+
+        is_paid = user_id in paying_user_ids
+
+        # How many active days does this user produce events for?
+        # Assumptions -> Free users: usually fewer days, paid users: more days
+        n_active_days = rng.integers(1, 10) if not is_paid else rng.integers(5, 40)
+
+        # Choose days after signup when the user is active
+        active_offsets = np.sort(rng.choice(np.arange(0, 180), size=n_active_days, replace=False))
+        active_dates = created_at + pd.to_timedelta(active_offsets, unit="D")
+
+        for day in active_dates:
+            # Events per active day
+            n_events = rng.integers(1, 4) if not is_paid else rng.integers(2, 8)
+
+            probs = event_probs_paid if is_paid else event_probs_free
+            chosen = rng.choice(event_types, size=n_events, p=probs, replace=True)
+
+            for et in chosen:
+                # Random time within the day
+                seconds = rng.integers(0, 24 * 3600)
+                ts = day + pd.to_timedelta(seconds, unit="s")
+
+                rows.append(
+                    {
+                        "event_id": f"E{event_id:010d}",
+                        "user_id": user_id,
+                        "event_type": et,
+                        "event_ts": ts,
+                    }
+                )
+                event_id += 1
+
+    df = pd.DataFrame(rows)
+
+    # Inject bronze data inconsistencies: small amount of null event_type and casing issues
+    bad_idx = rng.choice(df.index, size=int(0.002 * len(df)), replace=False)
+    df.loc[bad_idx, "event_type"] = None
+
+    casing_idx = rng.choice(df.index, size=int(0.01 * len(df)), replace=False)
+    df.loc[casing_idx, "event_type"] = df.loc[casing_idx, "event_type"].astype(str).str.upper()
+
+    return df
+
+
 if __name__ == "__main__":
     users = make_users()
     users_path = BRONZE_DIR / "users.parquet"
@@ -150,3 +226,7 @@ if __name__ == "__main__":
     subscriptions.to_parquet(subs_path, index=False)
     print(f"Wrote {len(subscriptions):,} rows -> {subs_path}")
 
+    events = make_events(users, subscriptions)
+    events_path = BRONZE_DIR / "events.parquet"
+    events.to_parquet(events_path, index=False)
+    print(f"Wrote {len(events):,} rows -> {events_path}")
