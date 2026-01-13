@@ -215,6 +215,56 @@ def make_events(users: pd.DataFrame, subscriptions: pd.DataFrame, seed: int = 21
     return df
 
 
+def make_assets(n_assets: int = 250, seed: int = 31) -> pd.DataFrame:
+    """
+    Generates a synthetic assets table
+    Context: NorthStar is based on a offshore wind farm data platform with various operational assets (turbines, met stations, edge gateways)
+    One row per operational asset (device/turbine/station).
+    Columns:
+    - asset_id: stable primary key
+    - asset_type: turbine, met_station, edge_gateway
+    - region: operational region
+    - installed_at: date of installation
+    - capacity_kw: capacity in kW (for turbines, power draw for stations/gate)
+    """
+    rng = np.random.default_rng(seed)
+
+    asset_types = np.array(["turbine", "met_station", "edge_gateway"])
+    regions = np.array(["north_sea", "irish_sea", "channel", "atlantic"]) # some operational regions
+
+    start = np.datetime64("2022-01-01")
+    end = np.datetime64("2025-06-30")
+    n_days = (end - start).astype("timedelta64[D]").astype(int) + 1
+    installed_at = start + rng.integers(0, n_days, n_assets).astype("timedelta64[D]")
+
+    # Build assets DataFrame
+    df = pd.DataFrame(
+        {
+            "asset_id": [f"A{str(i).zfill(5)}" for i in range(1, n_assets + 1)],
+            "asset_type": rng.choice(asset_types, size=n_assets, p=[0.55, 0.35, 0.10]),
+            "region": rng.choice(regions, size=n_assets, p=[0.50, 0.20, 0.20, 0.10]),
+            "installed_at": pd.to_datetime(installed_at),
+        }
+    )
+
+    # Capacity depends on type of asset
+    capacity = []
+    for t in df["asset_type"]:
+        if t == "turbine":
+            capacity.append(int(rng.integers(2_000, 8_001))) # 2–8 MW (in kW)
+        elif t == "met_station":
+            capacity.append(int(rng.integers(5, 31))) # Small power draw for met stations
+        else: 
+            capacity.append(int(rng.integers(50, 301))) # Larger power draw for edge gateways
+    df["capacity_kw"] = capacity
+
+    # Bronze inconsistent data injections: inconsistent region casing occasionally
+    mess_idx = rng.choice(df.index, size=int(0.02 * n_assets), replace=False)
+    df.loc[mess_idx, "region"] = df.loc[mess_idx, "region"].str.upper()
+
+    return df
+
+
 if __name__ == "__main__":
     users = make_users()
     users_path = BRONZE_DIR / "users.parquet"
@@ -230,3 +280,9 @@ if __name__ == "__main__":
     events_path = BRONZE_DIR / "events.parquet"
     events.to_parquet(events_path, index=False)
     print(f"Wrote {len(events):,} rows -> {events_path}")
+
+    assets = make_assets()
+    assets_path = BRONZE_DIR / "assets.parquet"
+    assets.to_parquet(assets_path, index=False)
+    print(f"Wrote {len(assets):,} rows -> {assets_path}")
+
