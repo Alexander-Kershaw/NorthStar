@@ -286,7 +286,7 @@ def make_telemetry(assets: pd.DataFrame, start: str = "2025-01-01", end: str = "
     rng = np.random.default_rng(seed)
 
     # Hourly time index
-    ts_index = pd.date_range(start=start, end=end, freq="H", inclusive="both", tz="UTC")
+    ts_index = pd.date_range(start=start, end=end, freq="h", inclusive="both", tz="UTC")
     n_t = len(ts_index)
     n_a = len(assets)
 
