@@ -249,3 +249,23 @@ models:
               arguments:
                 values: [0, 1]
 
+
+# monthly retention cohorts mart and testing
+  - name: mart_retention_cohorts
+    description: "Reporting mart: monthly signup cohorts with D7 and D30 retention rates."
+    columns:
+      - name: cohort_month
+        tests:
+          - not_null
+
+      - name: cohort_size
+        tests:
+          - not_null
+
+      - name: retained_d7_rate
+        tests:
+          - not_null
+
+      - name: retained_d30_rate
+        tests:
+          - not_null
