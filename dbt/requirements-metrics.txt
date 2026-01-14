@@ -6,4 +6,5 @@ dbt-extractor==0.6.0
 dbt-metricflow==0.11.0
 dbt-protos==1.0.410
 dbt-semantic-interfaces==0.9.4.dev0
+duckdb==1.4.3
 metricflow==0.209.0
