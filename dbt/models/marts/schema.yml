@@ -77,3 +77,36 @@ models:
       - name: total_hours
         tests:
           - not_null
+
+
+# daily region uptime mart and testing
+  - name: mart_uptime_region_daily
+    description: "Reporting mart: daily uptime KPIs aggregated by region and asset type."
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+
+      - name: region
+        tests:
+          - not_null
+
+      - name: asset_type
+        tests:
+          - not_null
+
+      - name: avg_uptime_pct
+        tests:
+          - not_null
+
+      - name: downtime_hours
+        tests:
+          - not_null
+
+      - name: total_hours
+        tests:
+          - not_null
+
+      - name: n_assets
+        tests:
+          - not_null
