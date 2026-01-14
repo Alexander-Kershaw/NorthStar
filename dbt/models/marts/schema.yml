@@ -220,3 +220,32 @@ models:
       - name: signup_channel
         tests:
           - not_null
+
+
+# daily product usage fact and testing
+  - name: fct_usage_daily
+    description: "Gold product usage fact at user-day grain derived from events."
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_user')
+                field: user_id
+
+      - name: date_day
+        tests:
+          - not_null
+
+      - name: event_count
+        tests:
+          - not_null
+
+      - name: is_active
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
