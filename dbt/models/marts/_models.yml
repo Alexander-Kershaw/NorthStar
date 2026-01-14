@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: dim_time_spine
+    description: "Daily time spine (one row per day) required by dbt Semantic Layer / MetricFlow."
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        description: "Base date column for daily granularity"
+        granularity: day
+
+
