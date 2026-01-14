@@ -138,3 +138,85 @@ models:
         tests:
           - not_null
 
+
+# incident fact table and testing
+  - name: fct_incidents
+    description: "Gold incident fact table (one row per incident) used for MTTR and incident rate metrics."
+    columns:
+      - name: incident_id
+        tests:
+          - not_null
+          - unique
+
+      - name: asset_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_asset')
+                field: asset_id
+
+      - name: start_ts
+        tests:
+          - not_null
+
+      - name: end_ts
+        tests:
+          - not_null
+
+      - name: duration_hours
+        tests:
+          - not_null
+
+      - name: severity
+        tests:
+          - not_null
+
+      - name: cause
+        tests:
+          - not_null
+
+
+# daily MTTR and incident rates mart and testing
+  - name: mart_mttr_region_daily
+    description: "Reporting mart: MTTR and incident rates per day, region, and asset type."
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+      - name: region
+        tests:
+          - not_null
+      - name: asset_type
+        tests:
+          - not_null
+      - name: mttr_hours
+        tests:
+          - not_null
+      - name: incident_count
+        tests:
+          - not_null
+      - name: fleet_assets
+        tests:
+          - not_null
+      - name: incidents_per_100_assets
+        tests:
+          - not_null
+
+
+# user dimension and testing
+  - name: dim_user
+    description: "Gold user dimension (authoritative user attributes for product and revenue facts)."
+    columns:
+      - name: user_id
+        tests:
+          - not_null
+          - unique
+
+      - name: created_at
+        tests:
+          - not_null
+
+      - name: signup_channel
+        tests:
+          - not_null
