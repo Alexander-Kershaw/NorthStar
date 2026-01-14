@@ -269,3 +269,21 @@ models:
       - name: retained_d30_rate
         tests:
           - not_null
+
+
+# daily MRR fact and testing
+  - name: fct_mrr_daily
+    description: "Daily recurring revenue (MRR) derived from active subscription periods."
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+          - unique
+
+      - name: mrr_gbp
+        tests:
+          - not_null
+
+      - name: paying_users
+        tests:
+          - not_null
