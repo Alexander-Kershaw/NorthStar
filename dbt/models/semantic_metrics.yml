@@ -1,0 +1,88 @@
+version: 2
+
+semantic_models:
+  - name: revenue_daily
+    description: "Daily revenue grain (one row per day) used for MRR."
+    model: ref('fct_mrr_daily')
+    defaults:
+      agg_time_dimension: date_day
+    entities:
+      - name: revenue_day
+        type: primary
+        expr: date_day
+    dimensions:
+      - name: date_day
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: mrr_gbp
+        description: "Sum of daily MRR in GBP."
+        agg: sum
+        expr: mrr_gbp
+
+  - name: usage_daily
+    description: "User-day grain usage fact used for DAU and retention."
+    model: ref('fct_usage_daily')
+    defaults:
+      agg_time_dimension: date_day
+    entities:
+      - name: user
+        type: primary
+        expr: user_id
+    dimensions:
+      - name: date_day
+        type: time
+        type_params:
+          time_granularity: day
+      - name: is_active
+        type: categorical
+        expr: is_active
+    measures:
+      - name: active_users
+        description: "Distinct active users."
+        agg: count_distinct
+        expr: user_id
+
+  - name: uptime_daily
+    description: "Asset-day grain uptime fact used for uptime metrics."
+    model: ref('fct_asset_uptime_daily')
+    defaults:
+      agg_time_dimension: date_day
+    entities:
+      - name: asset
+        type: primary
+        expr: asset_id
+    dimensions:
+      - name: date_day
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: uptime_pct
+        description: "Average daily uptime percentage across assets."
+        agg: average
+        expr: uptime_pct
+
+metrics:
+  - name: mrr_gbp
+    label: "MRR (GBP)"
+    description: "Monthly recurring revenue in GBP."
+    type: simple
+    type_params:
+      measure: mrr_gbp
+
+  - name: dau
+    label: "Daily Active Users"
+    description: "Distinct active users per day."
+    type: simple
+    type_params:
+      measure: active_users
+    filter: "{{ Dimension('user__is_active') }} = 1"
+
+  - name: uptime_pct
+    label: "Average Uptime %"
+    description: "Average uptime percentage across assets per day."
+    type: simple
+    type_params:
+      measure: uptime_pct
