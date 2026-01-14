@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Raw source tables stored as Parquet in the Bronze layer."
+    tables:
+      - name: bronze_users
+        description: "User accounts and signup metadata."
+      - name: bronze_subscriptions
+        description: "Subscription periods and plan history."
+      - name: bronze_events
+        description: "Product usage events."
+      - name: bronze_assets
+        description: "Operational assets (turbines/stations/gateways)."
+      - name: bronze_telemetry
+        description: "Hourly asset telemetry: status + wind speed."
+      - name: bronze_incidents
+        description: "Incident windows derived from downtime periods."
+
+
+

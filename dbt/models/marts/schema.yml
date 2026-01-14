@@ -287,3 +287,29 @@ models:
       - name: paying_users
         tests:
           - not_null
+
+
+# monthly revenue summary mart and testing
+  - name: mart_revenue_summary_monthly
+    description: "Reporting mart: monthly recurring revenue summary derived from daily MRR."
+    columns:
+      - name: month_start
+        tests:
+          - not_null
+          - unique
+
+      - name: avg_mrr_gbp
+        tests:
+          - not_null
+
+      - name: end_of_month_mrr_gbp
+        tests:
+          - not_null
+
+      - name: avg_paying_users
+        tests:
+          - not_null
+
+      - name: end_of_month_paying_users
+        tests:
+          - not_null

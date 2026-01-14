@@ -1,0 +1,7 @@
+NorthStar:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "warehouse/northstar.duckdb"
+      threads: 4
