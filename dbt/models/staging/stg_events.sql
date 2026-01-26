@@ -1,6 +1,6 @@
 with src as (
     select *
-    from read_parquet('../data/bronze/events.parquet')
+    from read_parquet('{{ var("bronze_dir") }}/events.parquet')
 ),
 cleaned as (
     select

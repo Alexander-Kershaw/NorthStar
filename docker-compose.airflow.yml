@@ -9,7 +9,7 @@ services:
       - airflow_postgres:/var/lib/postgresql/data
 
   airflow-webserver:
-    image: apache/airflow:2.9.3
+    build: .
     depends_on:
       - postgres
     environment:
@@ -18,35 +18,36 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
       AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "northstar_super_secret_key_change_me"
+      AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+      AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./:/opt/northstar
+      - airflow_logs:/opt/airflow/logs
     ports:
       - "8080:8080"
     command: >
       bash -c "
       airflow db migrate &&
-      airflow users create
-        --username admin
-        --firstname admin
-        --lastname admin
-        --role Admin
-        --email admin@example.com
-        --password admin &&
       airflow webserver
       "
 
   airflow-scheduler:
-    image: apache/airflow:2.9.3
+    build: .
     depends_on:
       - postgres
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: "northstar_super_secret_key_change_me"
+      AIRFLOW__LOGGING__REMOTE_LOGGING: "false"
+      AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - ./:/opt/northstar
+      - airflow_logs:/opt/airflow/logs
     command: >
       bash -c "
       airflow db migrate &&
@@ -55,3 +56,4 @@ services:
 
 volumes:
   airflow_postgres:
+  airflow_logs:

@@ -192,6 +192,126 @@ See dbt/TESTING.md for full coverage and philosophy.
 
 ---
 
+## Orchestration (Apache Airflow)
+
+NorthStar includes a local Airflow setup to orchestrate the pipeline:
+
+**DAG:** `northstar_pipeline`  
+**Flow:** `generate_bronze` -> `dbt_build`
+
+### What the DAG runs
+1) **generate_bronze**
+   - executes `python scripts/generate_bronze.py`
+   - writes Bronze Parquet files to `data/bronze/`
+
+2) **dbt_build**
+   - executes `dbt build`
+   - runs all staging and marts models and all dbt tests (data quality gates)
+
+### Run Airflow locally
+From the repo root:
+
+```bash
+docker compose -f docker-compose.airflow.yml up -d
+```
+
+### Airflow UI:
+
+- `http://127.0.0.1:8080` (not `localhost`)
+- login with admin user (user: alex)
+
+### Trigger the pipeline
+
+- Unpause `northstar_pipeline` in Airflow UI
+- Trigger manual DAG run
+- View task logs for `generate_bronze` and `dbt_build`
+
+### Notes
+
+- Airflow containers use a custom image via `build: .` making `dbt-duckdb` avaliable inside the scheduler/webserver
+- Logs are written to `/opt/airflow/logs` volume (the log direcgtory inside the container)
+- **Note:** Logs are backed by a Docker volume, logs persist across restarts
+
+### Troubleshooting
+
+#### **Airflow UI won’t load**
+- Use: `http://127.0.0.1:8080` (not `localhost`)
+- Check containers:
+  ```bash
+  docker compose -f docker-compose.airflow.yml ps
+  ```
+
+#### **Login won't work / forgot password**
+
+List users: 
+
+```bash
+docker exec -it northstar-airflow-webserver-1 airflow users list
+```
+
+Or create new admin user: 
+
+```bash
+docker exec -it northstar-airflow-webserver-1 airflow users create \
+  --username alex \
+  --firstname Alex \
+  --lastname Kershaw \
+  --role Admin \
+  --email alex@example.com \
+  --password northstar
+```
+
+#### **Task logs show `dbt: command not found`**
+
+Airflow containers were not built with the required dbt installation.
+
+Rebuild the custom image:
+
+```bash
+docker compose -f docker-compose.airflow.yml down
+docker compose -f docker-compose.airflow.yml build
+docker compose -f docker-compose.airflow.yml up -d
+```
+
+Then verify dbt exists inside the container
+
+```bash
+docker exec -it northstar-airflow-webserver-1 dbt --version
+```
+
+#### **How to view Airflow logs**
+
+View logs from inside the webserver container:
+
+```bash
+docker exec -it northstar-airflow-webserver-1 ls -R /opt/airflow/logs | head -200
+```
+
+For a specific task attempt log:
+
+```bash
+docker exec -it northstar-airflow-webserver-1 tail -n 200 \
+/opt/airflow/logs/dag_id=northstar_pipeline/run_id=<RUN_ID>/task_id=dbt_build/attempt=1.log
+```
+
+List all DAG run folders:
+
+```bash
+docker exec -it northstar-airflow-webserver-1 find /opt/airflow/logs -maxdepth 3 -type d | head -200
+```
+
+#### **Reset everything**
+
+**Note:** Wipes Airflow users and Airflow UI history
+
+```bash
+docker compose -f docker-compose.airflow.yml down -v
+docker compose -f docker-compose.airflow.yml up -d
+```
+
+---
+
+
 ## Intention
 
 NorthStar demonstrates practical analytics engineering skill:
@@ -202,6 +322,7 @@ NorthStar demonstrates practical analytics engineering skill:
 - producing business KPIs and dashboard-ready marts
 - defining metrics once via a semantic layer
 - shipping a working BI frontend
+- orchestration implementation for schedualing 
 
 ***
 

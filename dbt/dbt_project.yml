@@ -4,6 +4,10 @@ config-version: 2
 
 profile: "NorthStar"
 
+vars:
+  bronze_dir: "/Users/alexanderjameskershaw/documents/northstar/data/bronze"
+
+
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -21,5 +25,5 @@ models:
     staging:
       +materialized: view
 
-# Removed marts configuration for now
+
 
