@@ -5,7 +5,7 @@ config-version: 2
 profile: "NorthStar"
 
 vars:
-  bronze_dir: "/Users/alexanderjameskershaw/documents/northstar/data/bronze"
+  bronze_dir: "../data/bronze"
 
 
 model-paths: ["models"]

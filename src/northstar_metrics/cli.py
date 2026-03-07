@@ -29,10 +29,11 @@ def generate_bronze() -> None:
 
 # dbt build for warehouse
 @app.command("build")
+@app.command("build")
 def build_warehouse() -> None:
     typer.echo("=====|Running dbt build...|=====")
     (DBT_DIR / "warehouse").mkdir(parents=True, exist_ok=True)
-    run_command("dbt build", cwd=DBT_DIR)
+    run_command('dbt build --vars \'{"bronze_dir": "../data/bronze"}\'', cwd=DBT_DIR)
     typer.echo("dbt build complete.")
 
 # Geberate dbt docs
