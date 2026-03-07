@@ -1,64 +1,171 @@
+
+![NorthStar Banner](docs/images/banner.png)
+
 ***
 
 # NorthStar 
 
 ***
 
+
+![dbt](https://img.shields.io/badge/dbt-data%20transforms-orange)
+![DuckDB](https://img.shields.io/badge/DuckDB-warehouse-yellow)
+![Airflow](https://img.shields.io/badge/Airflow-orchestration-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-dashboard-red)
+
+
+
 **Local Analytics Warehouse, dbt Marts, Data Quality Suite, Semantic Layer. Streamlit BI**
  
-NorthStar is an analytics engineering project that builds a realistic local warehouse from scratch:
+NorthStar is an analytics engineering project that builds a realistic local warehouse from scratch supporting a full simulated end-to-end SaaS analytics platform.
 
-- **Bronze**: synthetic operational data and product data written to Parquet
-- **Staging**: type normalization, category standardization, referential integrity
-- **Gold (Marts)**: facts and dimensions in a star-schema style
-- **Reporting Marts**: dashboard-ready aggregates (uptime, MTTR, retention, revenue)
-- **Data Quality**: dbt schema tests and singular tests (interval sanity, composite keys, range checks)
-- **Semantic Layer**: MetricFlow metrics with a time spine (“single source of truth” KPIs)
-- **Streamlit BI**: lightweight dashboard to prove end-to-end value
+The project demonstrates modern data engineering practices including:
+
+- Bronze → Silver → Gold data modeling
+- dbt transformations and tests
+- semantic metrics layer
+- DuckDB analytical warehouse
+- Streamlit dashboards
+- Apache Airflow orchestration
+- CLI-driven reproducible pipelines
 
 Northstar intents do demonstrate understanding of the fundamental data architectures that enable trustworthy and robust analytics that are resilient to metric corruption and quiet failures that impact the validity of downstream data.
 
 ---
 
-## Stack
-- **Python** (data generation and Streamlit)
-- **DuckDB** (local warehouse)
-- **Parquet** (lakehouse storage)
-- **dbt and dbt-duckdb** (models, tests, docs)
-- **MetricFlow** (dbt semantic layer metrics)
-- **Streamlit** (BI demo app)
 
----
+## Architecture
 
-## Repository structure
+```mermaid
+flowchart LR
 
-```text
-NorthStar/
-├── dashboards 
-│ └── northstar_BI # Streamlit dashboard
-├── scripts/
-│ └── generate_bronze.py # writes Bronze Parquet
-├── data/
-│ └── bronze/ # generated Parquet (gitignored)
-├── dbt/
-│ ├── models/
-│ │ ├── staging/ # stg_* models + schema.yml tests
-│ │ ├── marts/
-│ │ │ ├── dimensions/ # dim_* models (Gold)
-│ │ │ ├── facts/ # fct_* models (Gold)
-│ │ │ └── reporting/ # mart_* reporting outputs
-│ │ └── semantic_metrics.yml # semantic models + metrics
-│ ├── tests/ # singular tests (custom SQL)
-│ ├── warehouse/ # DuckDB file (gitignored)
-│ ├── TESTING.md # test philosophy + coverage
-│ └── SEMANTIC_LAYER.md # MetricFlow usage
-├── requirements-streamlit.txt # dashboard deps
-└── README.md
+subgraph Orchestration
+A[Apache Airflow]
+end
+
+subgraph Data Generation
+B[Bronze Generator]
+C[(Parquet Bronze Data)]
+end
+
+subgraph Transformation
+D[dbt Staging Models]
+E[Fact + Dimension Models]
+F[Analytics Marts]
+end
+
+subgraph Warehouse
+G[(DuckDB)]
+end
+
+subgraph Metrics
+H[dbt Semantic Layer]
+end
+
+subgraph Presentation
+I[Streamlit Dashboard]
+end
+
+A --> B
+B --> C
+C --> D
+D --> E
+E --> F
+F --> G
+G --> H
+H --> I
 ```
 
-**Note:** 'data/' and 'dbt/warehouse/' are excluded from git.
+**NorthStar follows the conventional modern analytics engineering pattern:**
+
+Raw Data → Transformation → Warehouse → Metrics → Dashboard
+
+![Architecture_Diagram](docs/images/architecture.png)
 
 ---
+
+## NorthStar Pipeline
+
+The system models telemetry and SaaS operation data including the following:
+
+
+| Dataset       | Description                 |
+| ------------- | --------------------------- |
+| Users         | platform accounts           |
+| Subscriptions | billing and plan data       |
+| Events        | application usage telemetry |
+| Assets        | monitored infrastructure    |
+| Telemetry     | uptime and system metrics   |
+| Incidents     | operational failures        |
+
+
+The pipeline transforms this into analytical models including:
+
+- Daily Active Users
+
+- Monthly Recurring Revenue
+
+- Asset uptime metrics
+
+- Incident MTTR
+
+- Revenue summaries
+
+---
+
+
+
+## Pipeline Flow
+
+NorthStar executes the following pipeline:
+
+1. **Bronze Generation**  
+   Synthetic operational datasets are generated and written as Parquet files.
+
+2. **Staging Transformations**  
+   dbt standardizes schema, enforces types, and validates data.
+
+3. **Data Quality Tests**  
+   dbt tests ensure primary keys, accepted values, and relational integrity.
+
+4. **Warehouse Models**  
+   Facts and dimensions are built in DuckDB.
+
+5. **Metrics Layer**  
+   Business metrics such as MRR, retention, uptime, and MTTR are defined once.
+
+6. **Dashboard**  
+   Streamlit visualizes core business KPIs.
+
+7. **Orchestration**  
+   Airflow schedules and runs the entire pipeline.
+
+---
+
+## Data Warehouse Model 
+
+NorthStar uses **dbt** to build the warehouse using a layered architecture:
+
+```text
+Bronze
+│
+├── raw ingestion tables
+│
+Silver (Staging)
+│
+├── cleaned and standardized models
+│
+Gold (Warehouse)
+│
+├── dimensions
+├── fact tables
+│
+Analytics Marts
+```
+
+
+---
+
 
 ## Data model overview 
 
@@ -91,6 +198,13 @@ NorthStar/
 
 ---
 
+## dbt Lineage
+
+![dbt_lineage](docs/images/dbt_lineage.png)
+
+---
+
+
 ## Key KPIs included
 **Operational / Reliability**
 - Uptime % (daily + regional aggregation)
@@ -108,28 +222,58 @@ NorthStar/
 
 ---
 
-## Running the project
+## Dashboard
 
-### 1) Create environment
+NorthStar includes a lightweight analytics dashboard built with Streamlit.
+
+The dashboard exposes core product metrics:
+
+
+**Monthly Recurring Revenue**
+![MRR](docs/images/mrr.png)
+
+
+**Daily Active Users**
+![DAU](docs/images/DAU.png)
+
+**Asset uptime**
+![uptime](docs/images/uptime.png)
+
+
+**The dashboard also heads with a monthly revenue summary**
+
+![summary](docs/images/monthly_rev.png)
+
+---
+
+
+## CLI Usage
+
+### Create environment
 Activate your environment however you prefer (conda/venv).
 
-### 2) Generate Bronze Parquet
+Install dependencies with:
+
+```bash
+pip install -e .
+```
+
+### Generate Bronze Parquet
 From repo root:
 
 ```bash
-python scripts/generate_bronze.py
+northstar generate
 ```
 
 This writes Parquest files into: data/bronze
 
----
 
 ### dbt: build + test warehouse
 
 from inside dbt/:
 
 ```bash
-dbt build
+northstar build
 ```
 
 This runs:
@@ -137,7 +281,6 @@ This runs:
 - models (staging and marts)
 - all dbt tests (schemea and singular tests)
 
----
 
 ### Semantic Layer (MetricFlow)
 
@@ -157,15 +300,14 @@ mf query --metrics uptime_pct --group-by metric_time__week
 
 View **dbt/SEMANTIC_LAYER.md** for more details
 
----
 
-## Streamlit Dashboard
+
+### Streamlit Dashboard
 
 From the repo root:
 
 ```bash
-python -m pip install -r requirements-streamlit.txt
-streamlit run app.py
+northstar dashboard
 ```
 
 **Dashboard includes:**
@@ -173,26 +315,40 @@ streamlit run app.py
 - DAU chart (with configurable time window)
 - Uptime by region (configurable and data-anchored window)
 
+
+
+### Generate dbt Documentation
+
+```bash
+northstar docs
+```
+
+
+### Airflow Orchestration
+
+Start Airflow orchestration:
+
+```bash
+northstar airflow-up
+```
+
+Stop Airflow:
+
+```bash
+northstar airflow-down
+```
+
+
+### Run full NorthStar Pipeline
+
+```bash
+northstar full-run
+```
+
+
 ---
 
-## Testing + Data Quality
-
-NorthStar uses:
-
-- dbt schema tests: not_null, unique, accepted_values, relationships
-
-Also uses singular tests for:
-
-- composite grain uniqueness (e.g. asset_id + ts)
-- interval sanity (end_ts > start_ts)
-- metric sanity ranges (uptime within [0,1], revenue non-negative)
-
-
-See dbt/TESTING.md for full coverage and philosophy.
-
----
-
-## Orchestration (Apache Airflow)
+## Orchestration (Apache Airflow) Specifics
 
 NorthStar includes a local Airflow setup to orchestrate the pipeline:
 
@@ -212,13 +368,13 @@ NorthStar includes a local Airflow setup to orchestrate the pipeline:
 From the repo root:
 
 ```bash
-docker compose -f docker-compose.airflow.yml up -d
+northstar airflow-up
 ```
 
 ### Airflow UI:
 
 - `http://127.0.0.1:8080` (not `localhost`)
-- login with admin user (user: alex)
+- login with admin user (user: alex, password: northstar)
 
 ### Trigger the pipeline
 
@@ -305,11 +461,99 @@ docker exec -it northstar-airflow-webserver-1 find /opt/airflow/logs -maxdepth 3
 **Note:** Wipes Airflow users and Airflow UI history
 
 ```bash
-docker compose -f docker-compose.airflow.yml down -v
-docker compose -f docker-compose.airflow.yml up -d
+northstar airflow-down
+
+northstar airflow-up
 ```
 
 ---
+
+
+## Testing and Data Quality
+
+NorthStar uses:
+
+- dbt schema tests: not_null, unique, accepted_values, relationships
+
+Also uses singular tests for:
+
+- composite grain uniqueness (e.g. asset_id + ts)
+- interval sanity (end_ts > start_ts)
+- metric sanity ranges (uptime within [0,1], revenue non-negative)
+
+
+See dbt/TESTING.md for full coverage and philosophy.
+
+Tests run automatically with `dbt build`.
+
+---
+
+## Screenshots
+
+| Component                 | Screenshot                                       | What it Shows                                                                                                 |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| **CLI Execution**         | ![CLI](docs/images/cli_1.png)        | Running `northstar build` from the CLI which orchestrates data generation, dbt models, and validation checks. |
+| **dbt Lineage Graph**     | ![dbt Lineage](docs/images/dbt_lineage.png) | dbt DAG showing transformation flow from **bronze → staging → marts** models.                                 |
+| **Airflow Orchestration**   | ![DuckDB](docs/images/airflow.png)     |  Local Airflow setup to orchestrate the pipeline showing triggered pipeline run                              |
+| **Dashboard (Streamlit)** | ![Dashboard](docs/images/monthly_rev.png)     | Interactive analytics dashboard built with Streamlit reading directly from the DuckDB warehouse.              |
+
+
+
+## Repository structure
+
+```text
+NorthStar/
+├── Dockerfile
+├── README.md
+├── airflow
+│   └── dags
+│       └── northstar_dag.py # airflow automation 
+├── dashboards 
+│ └── northstar_BI # Streamlit dashboard
+├── scripts/
+│ └── generate_bronze.py # writes Bronze Parquet
+├── data/
+│ └── bronze/ # generated Parquet (gitignored)
+├── dbt/
+│ ├── models/
+│ │ ├── staging/ # stg_* models + schema.yml tests
+│ │ ├── marts/
+│ │ │ ├── dimensions/ # dim_* models (Gold)
+│ │ │ ├── facts/ # fct_* models (Gold)
+│ │ │ └── reporting/ # mart_* reporting outputs
+│ │ └── semantic_metrics.yml # semantic models + metrics
+│ ├── tests/ # singular tests (custom SQL)
+│ ├── warehouse/ # DuckDB file (gitignored)
+│ ├── TESTING.md # test philosophy + coverage
+│ └── SEMANTIC_LAYER.md # MetricFlow usage
+├── requirements-streamlit.txt # dashboard deps
+└── README.md
+├── docker-compose.airflow.yml
+├── pyproject.toml
+└── src
+    └── northstar_metrics
+        └── __init__.py
+```
+
+
+**Note:** 'data/' and 'dbt/warehouse/' are excluded from git.
+
+---
+
+## Technologies Used
+
+NorthStar is built using modern analytics engineering tools:
+
+| Tool           | Role                        |
+| -------------- | --------------------------- |
+| Python         | data generation             |
+| DuckDB         | analytical warehouse        |
+| dbt            | transformations and testing |
+| MetricFlow     | semantic metrics            |
+| Streamlit      | dashboards                  |
+| Apache Airflow | orchestration               |
+| Docker         | containerized workflow      |
+
 
 
 ## Intention
