@@ -24,6 +24,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
+      - name: Create dbt warehouse directory
+        run: |
+          mkdir -p dbt/warehouse
+
       - name: Generate Bronze data
         run: |
           northstar generate

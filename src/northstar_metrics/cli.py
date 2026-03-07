@@ -31,6 +31,7 @@ def generate_bronze() -> None:
 @app.command("build")
 def build_warehouse() -> None:
     typer.echo("=====|Running dbt build...|=====")
+    (DBT_DIR / "warehouse").mkdir(parents=True, exist_ok=True)
     run_command("dbt build", cwd=DBT_DIR)
     typer.echo("dbt build complete.")
 
