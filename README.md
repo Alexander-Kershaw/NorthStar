@@ -230,7 +230,7 @@ The dashboard exposes core product metrics:
 
 
 **Monthly Recurring Revenue**
-![MRR](docs/images/mrr.png)
+![MRR](docs/images/MRR.png)
 
 
 **Daily Active Users**

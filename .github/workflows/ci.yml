@@ -19,19 +19,18 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
+      - name: Install project
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy pyarrow duckdb dbt-core dbt-duckdb typer streamlit
+          pip install -e .
 
       - name: Generate Bronze data
         run: |
-          python cli.py generate
+          northstar generate
 
-      - name: Run dbt build
-        working-directory: dbt
+      - name: Build warehouse
         run: |
-          dbt build
+          northstar build
 
       - name: Parse semantic layer
         working-directory: dbt
