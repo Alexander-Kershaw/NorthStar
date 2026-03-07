@@ -1,19 +1,25 @@
 import streamlit as st
 import duckdb
+from pathlib import Path
+import os
 
 st.set_page_config(page_title="NorthStar BI", layout="wide")
 st.title("NorthStar BI")
 st.caption("Local DuckDB, dbt marts, and MetricFlow dashboarding demo")
 
-DB_PATH = "/Users/alexanderjameskershaw/Documents/NorthStar/dbt/warehouse/northstar.duckdb" 
+ROOT = Path(__file__).resolve().parents[1]
+DBT_DIR = ROOT / "dbt"
+DB_PATH = DBT_DIR / "warehouse" / "northstar.duckdb"
+
+os.chdir(DBT_DIR)
 
 # Sidebar controls
 days_back = st.slider("Days of activity to display", min_value=7, max_value=180, value=60, step=7)
 
 @st.cache_data
 # Load monthly revenue summary from DuckDB
-def load_monthly_revenue(db_path: str):
-    con = duckdb.connect(db_path, read_only=True)
+def load_monthly_revenue(DB_PATH: str):
+    con = duckdb.connect(str(DB_PATH), read_only=True)
     df = con.execute("""
         select
             month_start,
@@ -29,8 +35,8 @@ def load_monthly_revenue(db_path: str):
 
 # Load daily active users from DuckDB
 @st.cache_data
-def load_dau(db_path: str, days_back: int):
-    con = duckdb.connect(db_path, read_only=True)
+def load_dau(DB_PATH: str, days_back: int):
+    con = duckdb.connect(str(DB_PATH), read_only=True)
     df = con.execute(f"""
         select
             date_day,
@@ -46,8 +52,8 @@ def load_dau(db_path: str, days_back: int):
 
 # Load list of regions from DuckDB
 @st.cache_data
-def load_regions(db_path: str):
-    con = duckdb.connect(db_path, read_only=True)
+def load_regions(DB_PATH: str):
+    con = duckdb.connect(str(DB_PATH), read_only=True)
     regions = con.execute("""
         select distinct region
         from dim_asset
@@ -58,8 +64,8 @@ def load_regions(db_path: str):
 
 # Load uptime by region from DuckDB
 @st.cache_data
-def load_uptime_by_region(db_path: str, region: str, days_back: int):
-    con = duckdb.connect(db_path, read_only=True)
+def load_uptime_by_region(DB_PATH: str, region: str, days_back: int):
+    con = duckdb.connect(str(DB_PATH), read_only=True)
 
     # Anchor to the latest available date in the mart
     max_day = con.execute("""
